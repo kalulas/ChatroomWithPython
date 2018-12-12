@@ -6,6 +6,7 @@ Port = 58525
 
 login = '0'
 broadcast = '1'
+secret = '2'
 exit = '8'
 full = 'F'
 existed = 'E'
@@ -13,20 +14,27 @@ existed = 'E'
 
 class Server:
     def __init__(self):
-        """
-        构造
-        """
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__user_dict = dict()
-        # self.__count = 0
         self.__upper_limit = 5
 
     def broadcast(self, message):
         sender = message[1:9]
-        # print(message)
         for user, conn in self.__user_dict.items():
             if user != sender:
                 conn.send((broadcast + message[1:]).encode())
+
+    def secret(self, message):
+        sender = message[1:9]
+        receiver_end_spot = str(message).find(" ", 9)
+        receiver = str(message[9:receiver_end_spot]).ljust(8)
+        if receiver in self.__user_dict.keys():
+            conn = self.__user_dict[receiver]
+            send_message = secret + sender + message[receiver_end_spot + 1:]
+            conn.send(send_message.encode())
+        else:
+            conn = self.__user_dict[sender]
+            conn.send((secret + "System  " + "No User Found or @Command Error\n").encode())
 
     def system_announce(self, message):
         sender = message[1:9]
@@ -43,6 +51,8 @@ class Server:
                 data = connection.recv(1024).decode()
                 if data.startswith(broadcast):
                     self.broadcast(data)
+                elif data.startswith(secret):
+                    self.secret(data)
                 elif data.startswith(exit):
                     del self.__user_dict[user_name]
                     connection.close()

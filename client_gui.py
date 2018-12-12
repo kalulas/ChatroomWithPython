@@ -8,6 +8,7 @@ PORT = 58525
 
 login = '0'
 broadcast = '1'
+secret = '2'
 exit = '8'
 full = 'F'
 existed = 'E'
@@ -75,7 +76,7 @@ class Client(tk.Tk):
                 self.__login = True
                 self.raise_frame("ChattingFrame")
                 message = "[System] Login Success, display command list with \"\help\" \n"
-                self.get_frame_by_name('ChattingFrame').add_message(message, "green")
+                self.get_frame_by_name('ChattingFrame').add_message(message, "Blue")
                 thread = threading.Thread(target=self.receive_message_thread)
                 thread.setDaemon(True)
                 thread.start()
@@ -86,15 +87,24 @@ class Client(tk.Tk):
             self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def help_menu(self):
-        # TODO help menu
-        message = "[System] NOT YET \n"
-        self.get_frame_by_name('ChattingFrame').add_message(message, "red")
+        message = "\n" \
+                  "User Command Guide\n" \
+                  "[0][\exit] to leave the chat\n" \
+                  "[1][@Receiver(space)message] send to a specific person\n" \
+                  "\n"
+        self.get_frame_by_name('ChattingFrame').add_message(message, "OrangeRed")
 
     def display_broadcast(self, message):
         sender = message[1:9]
         text = message[9:]
         self.get_frame_by_name("ChattingFrame").\
-            add_message('[@' + sender + ']> ' + text, "black")
+            add_message('[Public][@' + sender + ']> ' + text, "black")
+
+    def display_secret(self, message):
+        sender = message[1:9]
+        text = message[9:]
+        self.get_frame_by_name("ChattingFrame").\
+            add_message('[Secret][@' + sender + ']> ' + text, "HotPink")
 
     def display_system_message(self, message):
         sender = message[1:9]
@@ -113,6 +123,8 @@ class Client(tk.Tk):
                     self.display_system_message(data)
                 elif str(data).startswith(broadcast):
                     self.display_broadcast(data)
+                elif str(data).startswith(secret):
+                    self.display_secret(data)
             except Exception:
                 print("[Client] Connection Close")
                 break
@@ -124,6 +136,10 @@ class Client(tk.Tk):
         if str(message).startswith("\exit"):
             message = ""
             op_code = exit
+        elif str(message).startswith("@"):
+            op_code = secret
+            message = message[1:]
+            send = True
         elif str(message).startswith("\help"):
             self.help_menu()
         else:
@@ -139,6 +155,7 @@ class Client(tk.Tk):
             self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.destroy()
         return send
+
 
 class LoginFrame(tk.Frame):
     def __init__(self, parent, controller):
@@ -166,6 +183,10 @@ class LoginFrame(tk.Frame):
         user_name = self.controller.name.get(),
         if len(user_name[0]) > 8:
             self.add_message('[System] User Name Limit <= 8 characters')
+            self.controller.name.set("")
+            return
+        elif str(user_name[0]).isspace():
+            self.add_message('[System] User Name [ ] is not available')
             self.controller.name.set("")
             return
 
@@ -209,16 +230,23 @@ class ChattingFrame(tk.Frame):
         try:
             message = self.type_message_window.get("1.0", tk.END + '-1c')
             if self.controller.send_message(message + '\n'):
-                self.add_message('[You]' + self.controller.prompt + message + '\n', "gray")
+                if str(message).startswith("@"):
+                    self.add_message('[Secret]' + self.controller.prompt + message + '\n', "HotPink")
+                else:
+                    self.add_message('[You]' + self.controller.prompt + message  + '\n', "CornflowerBlue")
             self.type_message_window.delete("1.0", tk.END)
         except Exception:
             print("\Exit command")
 
     def send_message_from__gui(self, event=None):
         try:
+            # TODO different self print
             message = self.type_message_window.get("1.0", tk.END + '-1c')
             if self.controller.send_message(message):
-                self.add_message('[You]' + self.controller.prompt + message, "gray")
+                if str(message).startswith("@"):
+                    self.add_message('[Secret]' + self.controller.prompt + message, "HotPink")
+                else:
+                    self.add_message('[You]' + self.controller.prompt + message, "CornflowerBlue")
             self.type_message_window.delete("1.0", tk.END)
         except Exception:
             print("\Exit command")
@@ -226,7 +254,7 @@ class ChattingFrame(tk.Frame):
     def logout(self, event=None):
         self.controller.connected = False
         self.controller.send_message("\exit")
-        self.controller.destroy()
+        # self.controller.destroy()
 
     def add_message(self, new_message, color="black"):
         self.controller.message_line += 1
