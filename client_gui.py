@@ -16,7 +16,6 @@ existed = 'E'
 class Client(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
-        # tk.Tk.title = 'My Chatroom'
         self.__nickname = 'USER'
         self.prompt = ''
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -120,15 +119,16 @@ class Client(tk.Tk):
 
     def send_message(self, message):
         # todo additional functions
+        send = False
         op_code = ""
-        if message == "\exit":
+        if str(message).startswith("\exit"):
             message = ""
             op_code = exit
-        elif message == "\help":
+        elif str(message).startswith("\help"):
             self.help_menu()
         else:
             op_code = broadcast
-
+            send = True
         if len(op_code):
             send_message = (op_code + self.__nickname + message).encode()
             self.__socket.sendall(send_message)
@@ -137,7 +137,8 @@ class Client(tk.Tk):
             self.__login = False
             self.__socket.close()
             self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
+            self.destroy()
+        return send
 
 class LoginFrame(tk.Frame):
     def __init__(self, parent, controller):
@@ -205,16 +206,22 @@ class ChattingFrame(tk.Frame):
         self.receive_message_window.config(state=tk.DISABLED)
 
     def send_message_from__gui__button(self, event=None):
-        message = self.type_message_window.get("1.0", tk.END + '-1c')
-        self.controller.send_message(message + '\n')
-        self.add_message('[You]' + self.controller.prompt + message + '\n', "gray")
-        self.type_message_window.delete("1.0", tk.END)
+        try:
+            message = self.type_message_window.get("1.0", tk.END + '-1c')
+            if self.controller.send_message(message + '\n'):
+                self.add_message('[You]' + self.controller.prompt + message + '\n', "gray")
+            self.type_message_window.delete("1.0", tk.END)
+        except Exception:
+            print("\Exit command")
 
     def send_message_from__gui(self, event=None):
-        message = self.type_message_window.get("1.0", tk.END + '-1c')
-        self.controller.send_message(message)
-        self.add_message('[You]' + self.controller.prompt + message, "gray")
-        self.type_message_window.delete("1.0", tk.END)
+        try:
+            message = self.type_message_window.get("1.0", tk.END + '-1c')
+            if self.controller.send_message(message):
+                self.add_message('[You]' + self.controller.prompt + message, "gray")
+            self.type_message_window.delete("1.0", tk.END)
+        except Exception:
+            print("\Exit command")
 
     def logout(self, event=None):
         self.controller.connected = False
