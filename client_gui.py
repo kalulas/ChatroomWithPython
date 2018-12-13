@@ -88,7 +88,7 @@ class Client(tk.Tk):
                 thread.setDaemon(True)
                 thread.start()
         except ValueError as ve:
-            self.get_frame_by_name('LoginFrame').add_message(ve, "red")
+            self.get_frame_by_name('LoginFrame').add_message(ve)
             self.name.set("")
             self.__socket.close()
             self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -191,13 +191,13 @@ class LoginFrame(tk.Frame):
         entry_name.grid(row=0, column=1, ipadx=30, padx=15, pady=10)
 
         self.login_button = tk.Button(self, text="LOGIN", width=10, command=self.login)
-        self.login_button.grid(row=2, column=0, padx=10, pady=10)
-        self.logout_button = tk.Button(self, text="EXIT", width=10, command=self.logout)
-        self.logout_button.grid(row=2, column=1, padx=10, pady=10)
+        self.login_button.grid(row=2, columnspan=2, padx=10, pady=10)
+        # self.logout_button = tk.Button(self, text="EXIT", width=10, command=self.logout)
+        # self.logout_button.grid(row=2, column=1, padx=10, pady=10)
 
         entry_name.bind('<KeyRelease-Return>', self.login)
         self.login_button.bind('<Return>', self.login)
-        self.logout_button.bind('<Return>', self.logout)
+        # self.logout_button.bind('<Return>', self.logout)
 
     def login(self, event=None):
         user_name = self.controller.name.get(),
@@ -214,11 +214,11 @@ class LoginFrame(tk.Frame):
         self.controller.connecting_thread.setDaemon(True)
         self.controller.connecting_thread.start()
 
-    def logout(self, event=None):
-        self.controller.__login = False
-        self.controller.destroy()
+    # def logout(self, event=None):
+    #    self.controller.__login = False
+    #    self.controller.destroy()
 
-    def add_message(self, new_message, color="red"):
+    def add_message(self, new_message):
         self.receive_message_window["text"] = new_message
 
 
@@ -264,9 +264,6 @@ class ChattingFrame(tk.Frame):
     def send_message_from__gui__button(self, event=None):
         try:
             message = self.type_message_window.get("1.0", tk.END + '-1c')
-            print(0)
-            print(message)
-            print(0)
             if self.controller.send_message(message + '\n'):
                 if str(message).startswith("@"):
                     self.add_message('[Secret]' + self.controller.prompt + message + '\n', "HotPink")
@@ -303,9 +300,7 @@ class ChattingFrame(tk.Frame):
         self.receive_message_window.see(tk.END)
 
     def update_user_window(self, users):
-        # print(users)
         names = [name for name in str(users).split(" ") if name != ""]
-        # print(names)
         self.chatroom_member_window['listvariable'] = tk.StringVar(value=names)
 
     def get_name_for_secret(self, event=None):
