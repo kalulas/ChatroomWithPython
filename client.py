@@ -46,7 +46,6 @@ class Client:
                 break
 
     def help_menu(self):
-        # TODO help_menu to print message
         print("not finished yet")
 
     def main_loop(self):

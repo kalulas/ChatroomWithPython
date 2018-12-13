@@ -10,13 +10,14 @@ secret = '2'
 exit = '8'
 full = 'F'
 existed = 'E'
+shutdown = 'X'
 
 
 class Server:
     def __init__(self):
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__user_dict = dict()
-        self.__upper_limit = 5
+        self.__upper_limit = 10
 
     def broadcast(self, message):
         sender = message[1:9]
@@ -36,11 +37,15 @@ class Server:
             conn = self.__user_dict[sender]
             conn.send((secret + "System  " + "No User Found or @Command Error\n").encode())
 
+    # user exit announce only (for now 2018/12/13
     def system_announce(self, message):
-        sender = message[1:9]
         op_code = message[0]
         for user, conn in self.__user_dict.items():
-            if user != sender:
+            conn.send((op_code + message[1:]).encode())
+
+    def update_user_window(self, message):
+        op_code = message[0]
+        for user, conn in self.__user_dict.items():
                 conn.send((op_code + message[1:]).encode())
 
     def received_message(self, user_name):
@@ -56,14 +61,16 @@ class Server:
                 elif data.startswith(exit):
                     del self.__user_dict[user_name]
                     connection.close()
-                    self.system_announce(data)
+                    if len(self.__user_dict):
+                        message = str(data) + " ".join(self.__user_dict.keys())
+                        self.system_announce(message)
                     print("User " + user_name + 'has left the chat')
                     break
             # abortion
             except ConnectionResetError:
                 print("User " + user_name + 'left the chat accidentally')
-                self.system_announce(exit + user_name)
                 del self.__user_dict[user_name]
+                self.system_announce(exit + user_name)
                 connection.close()
                 break
 
@@ -86,9 +93,9 @@ class Server:
                             conn.close()
                             raise ValueError("User Requested an Existed Name")
                         # User has send login message and login succeed
-                        conn.send((login + 'Server  ').encode())
-                        self.system_announce(data)
                         self.__user_dict[login_name] = conn
+                        users_list = " ".join(self.__user_dict.keys())
+                        self.update_user_window(login + login_name + users_list)
                         thread = threading.Thread(target=self.received_message, args=(login_name,))
                         thread.setDaemon(True)
                         thread.start()
@@ -97,7 +104,11 @@ class Server:
                     conn.close()
                     raise ValueError("Chatroom Full")
             except ConnectionError:
-                print("Connection Error")
+                for conn in self.__user_dict.values():
+                    conn.send(shutdown.encode())
+                    conn.close()
+                self.__user_dict = {}
+                print("Connection Error, Chatroom shut down")
             except ValueError as ve:
                 print(ve)
 
