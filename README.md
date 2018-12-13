@@ -65,11 +65,11 @@ Design Document for Computer Network Project
 
 #### 登陆
 
-![blank](.\DesignDoc.assets\blank.gif)
+![blank](https://github.com/KaLuLas/ChatroomWithPython/blob/master/DesignDoc.assets/blank.gif?raw=true)
 
-![toolong](.\DesignDoc.assets\toolong.gif)
+![toolong](https://github.com/KaLuLas/ChatroomWithPython/blob/master/DesignDoc.assets/toolong.gif?raw=true)
 
-![NameExisted](.\DesignDoc.assets\NameExisted.gif)
+![NameExisted](https://github.com/KaLuLas/ChatroomWithPython/blob/master/DesignDoc.assets/NameExisted.gif?raw=true)
 
 
 
@@ -105,7 +105,7 @@ Design Document for Computer Network Project
 
 #### 广播信息
 
-![SendMessage](.\DesignDoc.assets\SendMessage.gif)
+![SendMessage](https://github.com/KaLuLas/ChatroomWithPython/blob/master/DesignDoc.assets/SendMessage.gif?raw=true)
 
 用户发送数据：1 + 用户名 + 聊天信息 ->
 
@@ -117,9 +117,9 @@ Design Document for Computer Network Project
 
 #### 发送私聊
 
-![secret](.\DesignDoc.assets\secret.gif)
+![secret](https://github.com/KaLuLas/ChatroomWithPython/blob/master/DesignDoc.assets/secret.gif?raw=true)
 
-![SecretFail](.\DesignDoc.assets\SecretFail.gif)
+![SecretFail](https://github.com/KaLuLas/ChatroomWithPython/blob/master/DesignDoc.assets/SecretFail.gif?raw=true)
 
 用户发送私聊：2 + 接收者 + 聊天信息 ->
 
@@ -252,7 +252,7 @@ Design Document for Computer Network Project
 
 **快速发送私聊功能**
 
-![PrivateShortCut](.\DesignDoc.assets\PrivateShortCut.gif)
+![PrivateShortCut](https://github.com/KaLuLas/ChatroomWithPython/blob/master/DesignDoc.assets/PrivateShortCut.gif?raw=true)
 
 ```python
 	self.type_message_window.bind('<KeyRelease-Return>', self.send_message_from__gui)
