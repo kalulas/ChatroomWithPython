@@ -1,9 +1,10 @@
+import re
 import socket
 import threading
 import tkinter as tk
 import tkinter.scrolledtext as tkst
+import file_utils as utils
 
-HOST = '127.0.0.1'
 PORT = 58525
 
 login = '0'
@@ -14,6 +15,7 @@ full = 'F'
 existed = 'E'
 shutdown = 'X'
 
+ip_regex = re.compile('^(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|[1-9])\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)$')
 
 class Client(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -26,6 +28,8 @@ class Client(tk.Tk):
         self.message_line = 0
 
         self.name = tk.StringVar()
+        self.ipaddr = tk.StringVar()
+        self.full_title = tk.StringVar()
         self.server = tk.StringVar()
 
         self.resizable(False, False)
@@ -44,6 +48,8 @@ class Client(tk.Tk):
         frame = ChattingFrame(container, self)
         self.frames[frame_name] = frame
 
+        ipaddr_config = utils.read_from_config()
+        self.ipaddr.set(ipaddr_config)
         self.raise_frame("LoginFrame")
 
     def raise_frame(self, frame_name):
@@ -61,10 +67,11 @@ class Client(tk.Tk):
         return None
 
     def login(self, user_name):
+        ip_address = str(self.ipaddr.get())
         self.__nickname = str(user_name).ljust(8)
         self.prompt = '[@' + self.__nickname + ']> '
         try:
-            self.__socket.connect((HOST, PORT))
+            self.__socket.connect((ip_address, PORT))
             # if connection succeeds, send login message
             send_message = (login + self.__nickname).encode()
             self.__socket.sendall(send_message)
@@ -79,6 +86,9 @@ class Client(tk.Tk):
                 # just in case
                 if message[1:9] != self.__nickname:
                     raise ValueError("[System]Server Went Wrong")
+
+                self.full_title.set(f"HOST: {ip_address} / PORT: {PORT}")
+                utils.save_to_config(ip_address)
                 self.raise_frame("ChattingFrame")
                 display_message = "[System] Login Success, display command list with \"\help\" \n"
                 self.get_frame_by_name('ChattingFrame').add_message(display_message, "Blue")
@@ -121,7 +131,7 @@ class Client(tk.Tk):
 
     def display_system_message(self, message):
         sender = message[1:9]
-        if sender[7] is not ' ':
+        if sender[7] != ' ':
             sender = sender + ' '
         if message[0] == login:
             self.get_frame_by_name("ChattingFrame").\
@@ -184,14 +194,18 @@ class LoginFrame(tk.Frame):
 
         self.receive_message_window = tk.Label(self, text="Welcome To My Chatroom :)")
         self.receive_message_window['font'] = ('consolas', 9)
-        self.receive_message_window.grid(row=1, columnspan=2, padx=5, sticky="nsew")
+        self.receive_message_window.grid(row=2, columnspan=2, padx=5, sticky="nsew")
 
-        tk.Label(self, text=" Your nickname :").grid(row=0, column=0, pady=10)
-        entry_name = tk.Entry(self, textvariable=self.controller.name)
+        tk.Label(self, text=" Chatroom's host :").grid(row=0, column=0, pady=10)
+        entry_name = tk.Entry(self, textvariable=self.controller.ipaddr)
         entry_name.grid(row=0, column=1, ipadx=30, padx=15, pady=10)
 
+        tk.Label(self, text=" Your nickname :").grid(row=1, column=0, pady=10)
+        entry_name = tk.Entry(self, textvariable=self.controller.name)
+        entry_name.grid(row=1, column=1, ipadx=30, padx=15, pady=10)
+
         self.login_button = tk.Button(self, text="LOGIN", width=10, command=self.login)
-        self.login_button.grid(row=2, columnspan=2, padx=10, pady=10)
+        self.login_button.grid(row=3, columnspan=2, padx=10, pady=10)
         # self.logout_button = tk.Button(self, text="EXIT", width=10, command=self.logout)
         # self.logout_button.grid(row=2, column=1, padx=10, pady=10)
 
@@ -200,17 +214,23 @@ class LoginFrame(tk.Frame):
         # self.logout_button.bind('<Return>', self.logout)
 
     def login(self, event=None):
-        user_name = self.controller.name.get(),
-        if len(user_name[0]) > 8:
+        user_name = str(self.controller.name.get())
+        ip_address = self.controller.ipaddr.get()
+        
+        if len(user_name) > 8:
             self.add_message('[System] User Name Limit <= 8 characters')
             self.controller.name.set("")
             return
-        elif str(user_name[0]).isspace() or len(user_name[0]) == 0:
-            self.add_message('[System] User Name [ ] is not available')
+        elif user_name.isspace() or len(user_name) == 0:
+            self.add_message(f'[System] User Name {user_name} is not available')
             self.controller.name.set("")
             return
+        elif ip_regex.match(ip_address) == None:
+            self.add_message(f'[System] ip address {ip_address} is not available')
+            self.controller.ipaddr.set("")
+            return
 
-        self.controller.connecting_thread = threading.Thread(target=self.controller.login, args=user_name)
+        self.controller.connecting_thread = threading.Thread(target=self.controller.login, args=(user_name,))
         self.controller.connecting_thread.setDaemon(True)
         self.controller.connecting_thread.start()
 
@@ -235,8 +255,7 @@ class ChattingFrame(tk.Frame):
         self.type_message_window['font'] = ('consolas', 12)
         self.type_message_window.grid(row=2, padx=10, pady=20, rowspan=2, sticky="nsew")
 
-        title = "HOST: " + HOST + " / PORT:" + str(PORT)
-        self.members = tk.Label(self, width=15, text=title)
+        self.members = tk.Label(self, width=15, textvariable=self.controller.full_title)
         self.members['font'] = ('consolas', 9)
         self.members.grid(row=0, column=0, padx=10, pady=5, sticky="nsew")
 
