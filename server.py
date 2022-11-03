@@ -83,7 +83,7 @@ class Server:
                 conn, addr = self.__socket.accept()
                 # detect whether room is full
                 if len(self.__user_dict) < self.__upper_limit:
-                    print('[Server] New Connection Accepted: ', conn.getsockname(), conn.fileno())
+                    print(f'[Server] New Connection Accepted: {conn.getpeername()}')
                     data = str(conn.recv(1024).decode())
                     if data.startswith(login):
                         login_name = data[1:]
